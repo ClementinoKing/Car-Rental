@@ -1060,7 +1060,7 @@ function BookingsPage() {
 }
 
 function ClientsPage() {
-  const clients = [
+  const initialClients = [
     {
       name: "Liam Banda",
       phone: "+265 991 222 431",
@@ -1098,6 +1098,73 @@ function ClientsPage() {
       kyc: "Verified",
     },
   ]
+  const [clients, setClients] = useState(initialClients)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [step, setStep] = useState(1)
+  const [formData, setFormData] = useState({
+    fullName: "",
+    phone: "",
+    email: "",
+    idNumber: "",
+    licenseNumber: "",
+    idDocumentName: "",
+    licenseDocumentName: "",
+    address: "",
+    city: "",
+    tier: "Standard",
+    kyc: "Pending",
+  })
+  const steps = [
+    { id: 1, label: "Basic Information" },
+    { id: 2, label: "Identification" },
+    { id: 3, label: "Profile Details" },
+    { id: 4, label: "Review & Create" },
+  ]
+  const stepProgress = (step / steps.length) * 100
+  const isFirstStep = step === 1
+  const isLastStep = step === steps.length
+
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setStep(1)
+    setFormData({
+      fullName: "",
+      phone: "",
+      email: "",
+      idNumber: "",
+      licenseNumber: "",
+      idDocumentName: "",
+      licenseDocumentName: "",
+      address: "",
+      city: "",
+      tier: "Standard",
+      kyc: "Pending",
+    })
+  }
+
+  const nextStep = () => {
+    if (step < steps.length) setStep((prev) => prev + 1)
+  }
+
+  const prevStep = () => {
+    if (step > 1) setStep((prev) => prev - 1)
+  }
+
+  const createClient = () => {
+    setClients((prev) => [
+      {
+        name: formData.fullName || "New Client",
+        phone: formData.phone || "N/A",
+        email: formData.email || "N/A",
+        totalBookings: 0,
+        activeRental: "No",
+        tier: formData.tier,
+        kyc: formData.kyc,
+      },
+      ...prev,
+    ])
+    closeModal()
+  }
 
   return (
     <main className="flex-1 p-5 sm:p-6 lg:p-8">
@@ -1108,7 +1175,10 @@ function ClientsPage() {
             Customer profiles, verification status, and rental activity.
           </p>
         </div>
-        <Button className="h-10 rounded-md border border-black bg-black px-4 text-white hover:bg-neutral-800 dark:border-white dark:bg-white dark:text-black dark:hover:bg-neutral-200">
+        <Button
+          onClick={() => setIsModalOpen(true)}
+          className="h-10 rounded-md border border-black bg-black px-4 text-white hover:bg-neutral-800 dark:border-white dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+        >
           Add Client
         </Button>
       </div>
@@ -1178,6 +1248,252 @@ function ClientsPage() {
           </table>
         </div>
       </section>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-black/10 bg-white shadow-xl dark:border-white/10 dark:bg-neutral-900">
+            <div className="flex items-center justify-between border-b border-black/10 px-5 py-4 dark:border-white/10">
+              <div>
+                <h3 className="text-lg font-semibold">Create Client</h3>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">Add a new customer profile</p>
+              </div>
+              <button
+                onClick={closeModal}
+                className="flex h-9 w-9 items-center justify-center rounded-md border border-black/10 hover:bg-neutral-100 dark:border-white/10 dark:hover:bg-neutral-800"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="border-b border-black/10 bg-neutral-50/80 px-5 py-4 dark:border-white/10 dark:bg-neutral-800/30">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-sm font-medium">
+                  Step {step} of {steps.length}: {steps[step - 1]?.label}
+                </p>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {Math.round(stepProgress)}% complete
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
+                <div
+                  className="h-full bg-black transition-all duration-300 ease-out dark:bg-white"
+                  style={{ width: `${stepProgress}%` }}
+                />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {steps.map((stepItem, index) => (
+                  <span
+                    key={stepItem.id}
+                    className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${
+                      index + 1 < step
+                        ? "border-black/20 bg-black/10 text-black dark:border-white/20 dark:bg-white/15 dark:text-white"
+                        : index + 1 === step
+                          ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                          : "border-black/15 bg-white text-neutral-600 dark:border-white/15 dark:bg-neutral-900 dark:text-neutral-300"
+                    }`}
+                  >
+                    {index + 1 < step ? "Done" : `Step ${index + 1}`} · {stepItem.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
+              {step === 1 && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="space-y-1.5">
+                    <span className="text-sm font-medium">Full Name</span>
+                    <input
+                      value={formData.fullName}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, fullName: e.target.value }))}
+                      placeholder="e.g. Chikondi Banda"
+                      className="h-10 w-full rounded-md border border-black/15 bg-white px-3 text-sm outline-none focus:border-black dark:border-white/15 dark:bg-neutral-900 dark:focus:border-white"
+                    />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-sm font-medium">Phone Number</span>
+                    <input
+                      value={formData.phone}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                      placeholder="+265 99 000 0000"
+                      className="h-10 w-full rounded-md border border-black/15 bg-white px-3 text-sm outline-none focus:border-black dark:border-white/15 dark:bg-neutral-900 dark:focus:border-white"
+                    />
+                  </label>
+                  <label className="space-y-1.5 sm:col-span-2">
+                    <span className="text-sm font-medium">Email</span>
+                    <input
+                      value={formData.email}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                      placeholder="client@email.com"
+                      className="h-10 w-full rounded-md border border-black/15 bg-white px-3 text-sm outline-none focus:border-black dark:border-white/15 dark:bg-neutral-900 dark:focus:border-white"
+                    />
+                  </label>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="space-y-1.5">
+                    <span className="text-sm font-medium">National ID</span>
+                    <input
+                      value={formData.idNumber}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, idNumber: e.target.value }))}
+                      placeholder="e.g. 1234567890"
+                      className="h-10 w-full rounded-md border border-black/15 bg-white px-3 text-sm outline-none focus:border-black dark:border-white/15 dark:bg-neutral-900 dark:focus:border-white"
+                    />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-sm font-medium">Driver License</span>
+                    <input
+                      value={formData.licenseNumber}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, licenseNumber: e.target.value }))}
+                      placeholder="e.g. MLW-DR-99812"
+                      className="h-10 w-full rounded-md border border-black/15 bg-white px-3 text-sm outline-none focus:border-black dark:border-white/15 dark:bg-neutral-900 dark:focus:border-white"
+                    />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-sm font-medium">Upload National ID</span>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          idDocumentName: e.target.files?.[0]?.name ?? "",
+                        }))
+                      }
+                      className="h-10 w-full rounded-md border border-black/15 bg-white px-2 text-sm outline-none file:mr-3 file:rounded file:border-0 file:bg-black file:px-2 file:py-1.5 file:text-white dark:border-white/15 dark:bg-neutral-900 dark:file:bg-white dark:file:text-black"
+                    />
+                    {formData.idDocumentName && (
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{formData.idDocumentName}</p>
+                    )}
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-sm font-medium">Upload Driver License</span>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          licenseDocumentName: e.target.files?.[0]?.name ?? "",
+                        }))
+                      }
+                      className="h-10 w-full rounded-md border border-black/15 bg-white px-2 text-sm outline-none file:mr-3 file:rounded file:border-0 file:bg-black file:px-2 file:py-1.5 file:text-white dark:border-white/15 dark:bg-neutral-900 dark:file:bg-white dark:file:text-black"
+                    />
+                    {formData.licenseDocumentName && (
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{formData.licenseDocumentName}</p>
+                    )}
+                  </label>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="space-y-1.5 sm:col-span-2">
+                    <span className="text-sm font-medium">Address</span>
+                    <input
+                      value={formData.address}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
+                      placeholder="Street / Area"
+                      className="h-10 w-full rounded-md border border-black/15 bg-white px-3 text-sm outline-none focus:border-black dark:border-white/15 dark:bg-neutral-900 dark:focus:border-white"
+                    />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-sm font-medium">City</span>
+                    <input
+                      value={formData.city}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, city: e.target.value }))}
+                      placeholder="e.g. Lilongwe"
+                      className="h-10 w-full rounded-md border border-black/15 bg-white px-3 text-sm outline-none focus:border-black dark:border-white/15 dark:bg-neutral-900 dark:focus:border-white"
+                    />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-sm font-medium">Tier</span>
+                    <select
+                      value={formData.tier}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, tier: e.target.value }))}
+                      className="h-10 w-full rounded-md border border-black/15 bg-white px-3 text-sm outline-none focus:border-black dark:border-white/15 dark:bg-neutral-900 dark:focus:border-white"
+                    >
+                      <option>Standard</option>
+                      <option>Silver</option>
+                      <option>Gold</option>
+                    </select>
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-sm font-medium">KYC Status</span>
+                    <select
+                      value={formData.kyc}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, kyc: e.target.value }))}
+                      className="h-10 w-full rounded-md border border-black/15 bg-white px-3 text-sm outline-none focus:border-black dark:border-white/15 dark:bg-neutral-900 dark:focus:border-white"
+                    >
+                      <option>Pending</option>
+                      <option>Verified</option>
+                    </select>
+                  </label>
+                </div>
+              )}
+
+              {step === 4 && (
+                <div className="space-y-4 rounded-md border border-black/10 bg-neutral-50 p-4 dark:border-white/10 dark:bg-neutral-800/40">
+                  <h4 className="text-base font-semibold">Review Client</h4>
+                  <div className="grid gap-3 text-sm sm:grid-cols-2">
+                    <p><span className="text-neutral-500 dark:text-neutral-400">Name:</span> {formData.fullName || "N/A"}</p>
+                    <p><span className="text-neutral-500 dark:text-neutral-400">Phone:</span> {formData.phone || "N/A"}</p>
+                    <p><span className="text-neutral-500 dark:text-neutral-400">Email:</span> {formData.email || "N/A"}</p>
+                    <p><span className="text-neutral-500 dark:text-neutral-400">National ID:</span> {formData.idNumber || "N/A"}</p>
+                    <p><span className="text-neutral-500 dark:text-neutral-400">License:</span> {formData.licenseNumber || "N/A"}</p>
+                    <p><span className="text-neutral-500 dark:text-neutral-400">National ID File:</span> {formData.idDocumentName || "Not uploaded"}</p>
+                    <p><span className="text-neutral-500 dark:text-neutral-400">License File:</span> {formData.licenseDocumentName || "Not uploaded"}</p>
+                    <p><span className="text-neutral-500 dark:text-neutral-400">Address:</span> {formData.address || "N/A"}</p>
+                    <p><span className="text-neutral-500 dark:text-neutral-400">City:</span> {formData.city || "N/A"}</p>
+                    <p><span className="text-neutral-500 dark:text-neutral-400">Tier:</span> {formData.tier}</p>
+                    <p><span className="text-neutral-500 dark:text-neutral-400">KYC:</span> {formData.kyc}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2 border-t border-black/10 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-neutral-900">
+              <div className="flex w-full gap-2 sm:w-auto">
+                <Button
+                  variant="outline"
+                  onClick={closeModal}
+                  className="h-10 w-full rounded-md border-black/20 sm:w-auto dark:border-white/20"
+                >
+                  Cancel
+                </Button>
+              </div>
+              <div className="flex w-full gap-2 sm:w-auto">
+                {!isFirstStep && (
+                  <Button
+                    variant="outline"
+                    onClick={prevStep}
+                    className="h-10 w-full rounded-md border-black/20 sm:w-auto dark:border-white/20"
+                  >
+                    Previous
+                  </Button>
+                )}
+                {!isLastStep ? (
+                  <Button
+                    onClick={nextStep}
+                    className="h-10 w-full rounded-md border border-black bg-black text-white hover:bg-neutral-800 sm:w-auto dark:border-white dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+                  >
+                    Next
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={createClient}
+                    className="h-10 w-full rounded-md border border-black bg-black text-white hover:bg-neutral-800 sm:w-auto dark:border-white dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+                  >
+                    Create Client
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
